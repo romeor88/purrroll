@@ -13,3 +13,9 @@ The browser never receives the PayPal secret. The Netlify function validates the
 bundle and selected colors, recalculates the official price, creates the PayPal
 order, and captures it after approval.
 
+The Meta Pixel is installed in `index.html`; its ID is public by design. The
+storefront tracks PageView, ViewContent, AddToCart, and InitiateCheckout. Purchase
+fires only after the PayPal return function confirms a completed capture. No extra
+Netlify Pixel environment variable is required. Push source changes to the linked
+Git repository to rebuild the site.
+

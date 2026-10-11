@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
 import { ShoppingBag, Star, Check, Truck, ShieldCheck, ChevronDown, ChevronLeft, ChevronRight, X, Plus, Minus, Gift, Lock, RotateCcw, Wind, Zap } from 'lucide-react';
 import NotFound from '@/pages/not-found';
+import { trackMetaPixelEvent } from '@/lib/meta-pixel';
 
 type Color = 'black' | 'blue' | 'mint' | 'pink';
 const COLORS: { id: Color; label: string; hex: string }[] = [
@@ -75,6 +76,55 @@ function Home() {
   const colors = Array.from({ length: b.qty }, (_, i) => (i === 0 ? color : picks[i - 1]));
 
   useEffect(() => {
+    trackMetaPixelEvent('ViewContent', {
+      content_ids: ['purrroll-playpen'],
+      content_name: 'PurrRoll Outdoor Pet Playpen',
+      content_type: 'product',
+      currency: 'USD',
+      value: BUNDLES[0].price,
+    });
+
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('checkout') !== 'success') return;
+
+    const orderId = url.searchParams.get('order_id');
+    const value = Number(url.searchParams.get('value'));
+    if (!orderId || !Number.isFinite(value) || value <= 0) return;
+
+    const storageKey = `purrroll-meta-purchase-${orderId}`;
+    let alreadyTracked = false;
+    try {
+      alreadyTracked = window.localStorage.getItem(storageKey) === '1';
+    } catch {
+      // Continue tracking if browser storage is unavailable.
+    }
+
+    if (!alreadyTracked) {
+      trackMetaPixelEvent(
+        'Purchase',
+        {
+          content_ids: ['purrroll-playpen'],
+          content_name: 'PurrRoll Outdoor Pet Playpen',
+          content_type: 'product',
+          currency: 'USD',
+          value,
+        },
+        orderId,
+      );
+      try {
+        window.localStorage.setItem(storageKey, '1');
+      } catch {
+        // The URL cleanup below still prevents repeat fires after refresh.
+      }
+    }
+
+    url.searchParams.delete('checkout');
+    url.searchParams.delete('order_id');
+    url.searchParams.delete('value');
+    window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+  }, []);
+
+  useEffect(() => {
     const o = new IntersectionObserver(([e]) => setStickyShow(!e.isIntersecting && e.boundingClientRect.top < 0), { threshold: 0 });
     if (buyRef.current) o.observe(buyRef.current);
     return () => o.disconnect();
@@ -83,8 +133,28 @@ function Home() {
   useEffect(() => { const t = setInterval(() => setRv(r => (r + 1) % REVIEWS.length), 5000); return () => clearInterval(t); }, []);
 
   const pickColor = (c: Color) => { setColor(c); setActive(gallery.indexOf(c)); };
-  const addToCart = () => { setInCart(true); setCartOpen(true); setMsg(''); };
+  const addToCart = () => {
+    trackMetaPixelEvent('AddToCart', {
+      content_ids: ['purrroll-playpen'],
+      content_name: 'PurrRoll Outdoor Pet Playpen',
+      content_type: 'product',
+      currency: 'USD',
+      num_items: b.qty,
+      value: b.price,
+    });
+    setInCart(true);
+    setCartOpen(true);
+    setMsg('');
+  };
   const checkout = async () => {
+    trackMetaPixelEvent('InitiateCheckout', {
+      content_ids: ['purrroll-playpen'],
+      content_name: 'PurrRoll Outdoor Pet Playpen',
+      content_type: 'product',
+      currency: 'USD',
+      num_items: b.qty,
+      value: b.price,
+    });
     setBusy(true); setMsg('');
     try {
       const r = await fetch('/.netlify/functions/paypal-create-order', {

@@ -60,9 +60,23 @@ export async function handler(event) {
       console.error('PayPal capture failed', capture);
     }
 
+    const redirectUrl = new URL('/', siteOrigin);
+    redirectUrl.searchParams.set('checkout', status);
+    if (status === 'success') {
+      const completedCapture = capture.purchase_units
+        ?.flatMap((unit) => unit.payments?.captures ?? [])
+        .find((payment) => payment.status === 'COMPLETED');
+      const amount = Number(completedCapture?.amount?.value);
+
+      redirectUrl.searchParams.set('order_id', orderId);
+      if (Number.isFinite(amount) && amount > 0) {
+        redirectUrl.searchParams.set('value', amount.toFixed(2));
+      }
+    }
+
     return {
       statusCode: 302,
-      headers: { location: `${siteOrigin}/?checkout=${status}` },
+      headers: { location: redirectUrl.toString() },
     };
   } catch (error) {
     console.error('PayPal return handler failed', error);

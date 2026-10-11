@@ -3,6 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <script type="module">
+      if (import.meta.env.PROD) {
+        !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '1359247239746406');
+        fbq('track', 'PageView');
+      }
+    </script>
     <title>PurrRoll - Outdoor Pet Playpen</title>
     <meta name="description" content="PurrRoll outdoor cat playpen: safe fresh-air time for indoor cats. Pop-up setup, breathable mesh, free surprise gift." />
     <meta name="robots" content="index, follow" />

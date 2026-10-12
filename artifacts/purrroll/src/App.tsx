@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
-import { ShoppingBag, Star, Check, Truck, ShieldCheck, ChevronDown, ChevronLeft, ChevronRight, X, Plus, Minus, Gift, Lock, RotateCcw, Wind, Zap } from 'lucide-react';
+import { ShoppingBag, Star, Check, Truck, ShieldCheck, ChevronDown, ChevronLeft, ChevronRight, X, Plus, Minus, Gift, Lock, RotateCcw, Wind, Zap, Quote } from 'lucide-react';
 import NotFound from '@/pages/not-found';
 import { trackMetaPixelEvent } from '@/lib/meta-pixel';
+import blueCatReviewImage from './assets/reviews/blue-cat.webp';
+import backyardPlaypensReviewImage from './assets/reviews/backyard-playpens.webp';
+import parkCatReviewImage from './assets/reviews/park-cat.webp';
 
 type Color = 'black' | 'blue' | 'mint' | 'pink';
 const COLORS: { id: Color; label: string; hex: string }[] = [
@@ -32,6 +35,25 @@ const REVIEWS = [
   { n: 'Sarah A.', l: 'Quebec, Canada', t: 'Every afternoon at five, my neighbor and I put our cats out on the lawn together. They roll side by side and sniff each other through the mesh.' },
   { n: 'Tina W.', l: 'Chicago, USA', t: 'With PurrRoll he gets real outdoor time on the balcony and at the park, he is calmer at home, and I finally stopped worrying.' },
 ];
+const TESTIMONIAL_CARDS = [
+  { review: REVIEWS[0], image: blueCatReviewImage, alt: 'Cat enjoying a blue PurrRoll playpen in a backyard' },
+  { review: REVIEWS[3], image: backyardPlaypensReviewImage, alt: 'Two cats relaxing in PurrRoll playpens in a backyard' },
+  { review: REVIEWS[4], image: parkCatReviewImage, alt: 'Cat exploring a park from inside a black PurrRoll playpen' },
+];
+const HAPPY_CAT_CLIPS = [
+  {
+    id: 'patio-play',
+    src: 'https://rollymew.store/cdn/shop/videos/c/vp/7527265ada234c22899696cea4c66baf/7527265ada234c22899696cea4c66baf.HD-1080p-4.8Mbps-96749612.mp4?v=0',
+    poster: 'https://rollymew.store/cdn/shop/files/preview_images/7527265ada234c22899696cea4c66baf.thumbnail.0000000000.jpg?v=1791418987',
+    label: 'Cats playing in their playpens on a sunny patio',
+  },
+  {
+    id: 'backyard-play',
+    src: 'https://rollymew.store/cdn/shop/videos/c/vp/250d22c715234c9487256ffa16a6842c/250d22c715234c9487256ffa16a6842c.HD-1080p-7.2Mbps-96749533.mp4?v=0',
+    poster: 'https://rollymew.store/cdn/shop/files/preview_images/250d22c715234c9487256ffa16a6842c.thumbnail.0000000000.jpg?v=1791418889',
+    label: 'Cats enjoying playpens together in a backyard',
+  },
+];
 const FAQ = [
   ['What size is it, and will my cat fit?', 'PurrRoll opens to about 27 in (68 cm) across, with room for most adult cats to stand, turn around, stretch and lie down comfortably. It comes in one universal size, so you only need to choose your color.'],
   ['Is it safe for my cat?', 'Yes. PurrRoll is made with tough, breathable mesh that keeps fresh air flowing and gives your cat a full 360-degree view. Use it on a flat surface, keep it in the shade on warm days and always stay nearby while your cat is inside.'],
@@ -56,6 +78,61 @@ function Section({ children, className = '', id }: { children: ReactNode; classN
 }
 function H2({ children }: { children: ReactNode }) {
   return <h2 className="text-2xl md:text-4xl font-extrabold tracking-tight text-center text-ink mb-3">{children}</h2>;
+}
+
+function HappyCatVideo({ clip }: { clip: (typeof HAPPY_CAT_CLIPS)[number] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [nearViewport, setNearViewport] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const prefersReducedMotion = typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    if (!('IntersectionObserver' in window)) {
+      setNearViewport(true);
+      setVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry) return;
+      setVisible(entry.isIntersecting);
+      if (entry.isIntersecting) setNearViewport(true);
+    }, { rootMargin: '240px 0px' });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (prefersReducedMotion || !visible) {
+      video.pause();
+      return;
+    }
+    void video.play().catch(() => {});
+  }, [nearViewport, prefersReducedMotion, visible]);
+
+  return (
+    <div ref={containerRef} className="overflow-hidden rounded-lg bg-muted">
+      <video
+        ref={videoRef}
+        src={nearViewport ? clip.src : undefined}
+        poster={nearViewport ? clip.poster : undefined}
+        muted
+        loop
+        playsInline
+        controls={prefersReducedMotion && nearViewport}
+        preload={nearViewport ? 'metadata' : 'none'}
+        className="block w-full aspect-[0.86] object-cover"
+        aria-label={clip.label}
+      />
+    </div>
+  );
 }
 
 function Home() {
@@ -128,6 +205,14 @@ function Home() {
     const o = new IntersectionObserver(([e]) => setStickyShow(!e.isIntersecting && e.boundingClientRect.top < 0), { threshold: 0 });
     if (buyRef.current) o.observe(buyRef.current);
     return () => o.disconnect();
+  }, []);
+  useEffect(() => {
+    const targetId = window.location.hash.slice(1);
+    if (!targetId) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(targetId)?.scrollIntoView({ block: 'start' });
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
   useEffect(() => { document.body.style.overflow = cartOpen ? 'hidden' : ''; }, [cartOpen]);
   useEffect(() => { const t = setInterval(() => setRv(r => (r + 1) % REVIEWS.length), 5000); return () => clearInterval(t); }, []);
@@ -309,19 +394,6 @@ function Home() {
         </div>
       </Section>
 
-      <Section className="bg-brand text-white">
-        <H2><span className="text-white">Pick your color</span></H2>
-        <p className="text-center text-white/85 text-sm mb-8">Four finishes, one very happy cat.</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {COLORS.map(c => (
-            <button key={c.id} onClick={() => { pickColor(c.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="group text-left" data-testid={`button-showcase-${c.id}`}>
-              <div className="rounded-lg overflow-hidden aspect-square"><img src={img(c.id)} alt={c.label} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /></div>
-              <p className="font-semibold text-sm mt-2 flex items-center gap-2"><span className="w-3 h-3 rounded-full border border-white" style={{ background: c.hex }} />{c.label}</p>
-            </button>
-          ))}
-        </div>
-      </Section>
-
       <Section>
         <H2>Why cats (and owners) love it</H2>
         <div className="mt-8 grid md:grid-cols-[1.4fr_1fr] gap-6">
@@ -345,19 +417,35 @@ function Home() {
         </div>
       </Section>
 
-      <Section>
-        <H2>Happy cats club</H2>
+      <Section id="testimonials" className="scroll-mt-24">
+        <H2>Testimonials</H2>
         <p className="text-center text-sm text-muted-foreground mb-8">4.9/5 from +73 verified reviews</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
-          {gallery.map((c, i) => <img key={c} src={img(c)} alt="Happy cat zone" loading="lazy" className={`rounded-lg w-full aspect-square object-cover hover:-rotate-1 hover:scale-[1.03] transition-transform ${i % 2 ? 'md:translate-y-4' : ''}`} />)}
-        </div>
-        <div className="grid md:grid-cols-3 gap-4 mt-8">
-          {REVIEWS.map(r => (
-            <figure key={r.n} className="border rounded-lg p-5 bg-white hover:-translate-y-1 hover:shadow-lg transition-all">
-              <Stars /><blockquote className="text-sm mt-3">&ldquo;{r.t}&rdquo;</blockquote>
-              <figcaption className="mt-4 flex items-center gap-2 text-xs"><span className="w-8 h-8 rounded-full bg-blush grid place-items-center font-bold">{r.n[0]}</span><span><b>{r.n}</b><br /><span className="text-muted-foreground">{r.l} - Verified buyer</span></span></figcaption>
+        <div className="grid md:grid-cols-3 gap-5">
+          {TESTIMONIAL_CARDS.map(({ review, image, alt }) => (
+            <figure key={review.n} className="overflow-hidden rounded-xl border bg-white shadow-sm hover:-translate-y-1 hover:shadow-lg transition-all">
+              <div className="relative">
+                <img src={image} alt={alt} loading="lazy" className="block w-full aspect-[1.075] object-cover" />
+                <span className="absolute -bottom-5 right-4 grid h-11 w-11 place-items-center rounded-full border-4 border-white bg-brand text-white shadow-sm" aria-hidden="true">
+                  <Quote size={18} fill="currentColor" strokeWidth={1.5} />
+                </span>
+              </div>
+              <div className="p-5 pt-7">
+                <Stars />
+                <blockquote className="mt-3 text-sm leading-relaxed">&ldquo;{review.t}&rdquo;</blockquote>
+                <figcaption className="mt-4 flex items-center gap-2 text-xs">
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-blush font-bold">{review.n[0]}</span>
+                  <span><b>{review.n}</b><br /><span className="text-muted-foreground">{review.l} - Verified buyer</span></span>
+                </figcaption>
+              </div>
             </figure>
           ))}
+        </div>
+      </Section>
+
+      <Section id="happy-cats">
+        <H2><span className="text-[#d66d85]">Our happy cats</span></H2>
+        <div className="mx-auto mt-8 grid max-w-[980px] grid-cols-1 gap-5 md:grid-cols-2">
+          {HAPPY_CAT_CLIPS.map(clip => <HappyCatVideo key={clip.id} clip={clip} />)}
         </div>
       </Section>
 

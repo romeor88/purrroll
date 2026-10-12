@@ -371,6 +371,13 @@ function Home() {
         </div>
       </main>
 
+      <Section id="happy-cats">
+        <H2><span className="text-[#d66d85]">Our happy cats</span></H2>
+        <div className="mx-auto mt-8 grid max-w-[980px] grid-cols-1 gap-5 md:grid-cols-2">
+          {HAPPY_CAT_CLIPS.map(clip => <HappyCatVideo key={clip.id} clip={clip} />)}
+        </div>
+      </Section>
+
       <div className="bg-brand-soft border-y">
         <div className="mx-auto max-w-[1080px] px-5 py-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-semibold">
           {[[Truck, 'Free shipping on every order'], [ShieldCheck, 'Support for damaged or lost orders'], [Wind, 'Tough, breathable mesh'], [Lock, 'Secure PayPal checkout']].map(([I, t], i) => {
@@ -439,13 +446,6 @@ function Home() {
               </div>
             </figure>
           ))}
-        </div>
-      </Section>
-
-      <Section id="happy-cats">
-        <H2><span className="text-[#d66d85]">Our happy cats</span></H2>
-        <div className="mx-auto mt-8 grid max-w-[980px] grid-cols-1 gap-5 md:grid-cols-2">
-          {HAPPY_CAT_CLIPS.map(clip => <HappyCatVideo key={clip.id} clip={clip} />)}
         </div>
       </Section>
 
